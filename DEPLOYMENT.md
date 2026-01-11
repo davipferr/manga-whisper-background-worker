@@ -106,12 +106,21 @@ cd /opt/projects/manga-whisper-background-worker/repo
 # Build the project
 dotnet build
 
-# Run migrations (if using EF Core migrations)
-
-dotnet ef database update --project src/MangaWhisper.BackgroundWorker.Infrastructure --startup-project src/MangaWhisper.BackgroundWorker.Api
-
 # Exit whisper user
 exit
+
+# Generate SQL migration script from the main MangaWhisper project
+# Note: This project doesn't have its own migrations
+# We need to generate the SQL script from the main manga-whisper project
+# On your local machine (Windows), run:
+cd manga-whisper\back-end\MangaWhisper.Api
+dotnet ef migrations script --project ..\MangaWhisper.Infrastructure\MangaWhisper.Infrastructure.csproj --startup-project . --idempotent --output migration_prod.sql
+
+# Transfer the generated SQL file to your VPS
+scp migration_prod.sql root@YOUR_VPS_IP:/tmp/
+
+# Back on the VPS, run the SQL script
+sudo -u postgres psql -d manga_whisper -f /tmp/migration_prod.sql
 
 # Grant permissions to whisper_user on all tables and sequences
 sudo -u postgres psql -d manga_whisper -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO whisper_user;"
