@@ -1,0 +1,15 @@
+[Unit]
+Description=MangaWhisper Background Worker
+After=network.target
+
+[Service]
+Type=notify
+User=YOUR_USER
+WorkingDirectory=/opt/mangawhisper-worker/src/MangaWhisper.BackgroundWorker.Api
+ExecStart=/usr/bin/dotnet run
+Restart=always
+RestartSec=10
+Environment="DOTNET_ROOT=/usr/share/dotnet"
+
+[Install]
+WantedBy=multi-user.target
