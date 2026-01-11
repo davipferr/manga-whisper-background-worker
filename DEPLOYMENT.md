@@ -1,12 +1,12 @@
 # Deployment Guide - Ubuntu 24.04 LTS VPS
 
-Complete step-by-step guide to deploy the HiLo Robot on a fresh Ubuntu VPS with local PostgreSQL.
+Complete step-by-step guide to deploy the MangaWhisper Background Worker on a fresh Ubuntu VPS with local PostgreSQL.
 
 ## Prerequisites
 
 - Ubuntu 24.04 LTS VPS with root/sudo access
 - SSH access to your VPS
-- Binance API keys ready
+- PostgreSQL credentials ready
 
 ## Step 1: Connect to VPS
 
@@ -75,9 +75,10 @@ sudo chown -R whisper:whisper /opt/projects/manga-whisper-background-worker
 
 ```bash
 # Clone your repository
-sudo -u hilo git clone https://username:personal_access_token@github.com/yourusername/manga-whisper-background-worker.git /opt/projects/manga-whisper-background-worker/repo
+sudo -u whisper git clone https://username:personal_access_token@github.com/yourusername/manga-whisper-background-worker.git /opt/projects/manga-whisper-background-worker/repo
 
-sudo -u hilo ln -s /opt/projects/manga-whisper-background-worker/repo/* /opt/projects/manga-whisper-background-worker/
+# Verify the clone
+sudo -u whisper ls -la /opt/projects/manga-whisper-background-worker/repo
 ```
 
 ### Option B: Upload from your local machine (if not using git)
@@ -91,14 +92,26 @@ scp manga-whisper-background-worker.zip root@YOUR_VPS_IP:/tmp/
 # Back on the VPS:
 sudo apt install -y unzip
 cd /opt/projects/manga-whisper-background-worker
-sudo -u whisper unzip /tmp/manga-whisper-background-worker.zip
-sudo chown -R whisper:hwhisperilo /projects/manga-whisper-background-worker
+sudo -u whisper unzip /tmp/manga-whisper-background-worker.zip -d repo
+sudo chown -R whisper:whisper /opt/projects/manga-whisper-background-worker
 ```
 
 **Now create the database tables:**
 
 ```bash
-# Run migrations
+# Switch to whisper user and navigate to project
+sudo -u whisper -i
+cd /opt/projects/manga-whisper-background-worker/repo
+
+# Build the project
+dotnet build
+
+# Run migrations (if using EF Core migrations)
+
+dotnet ef database update --project src/MangaWhisper.BackgroundWorker.Infrastructure --startup-project src/MangaWhisper.BackgroundWorker.Api
+
+# Exit whisper user
+exit
 
 # Grant permissions to whisper_user on all tables and sequences
 sudo -u postgres psql -d manga_whisper -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO whisper_user;"
@@ -111,17 +124,21 @@ sudo -u postgres psql -d manga_whisper -c "ALTER DEFAULT PRIVILEGES IN SCHEMA pu
 echo "✅ Database tables created and permissions granted successfully!"
 ```
 
-## Step 7: Setup C# Virtual Environment
+## Step 7: Build and Restore Dependencies
 
 ```bash
 # Switch to whisper user
 sudo -u whisper -i
-cd /opt/hilo-robot/repo
+cd /opt/projects/manga-whisper-background-worker/repo
 
 # Install dependencies
 dotnet restore
 
 # Verify installation
+dotnet build
+
+# Check if build was successful
+echo "✅ Project built successfully!"
 
 # Exit whisper user
 exit
@@ -130,11 +147,11 @@ exit
 ## Step 8: Configure Environment
 
 ```bash
-# Copy .env.example to .env
-sudo -u whisper cp /opt/projects/manga-whisper-background-worker/repo/src/MangaWhisper.BackgroundWorker.Api/.env.example /opt/projects/manga-whisper-background-worker/repo/src/MangaWhisper.BackgroundWorker.Api/.env
+# Copy .env.example to .env (if it exists)
+sudo -u whisper cp /opt/projects/manga-whisper-background-worker/repo/src/MangaWhisper.BackgroundWorker.Api/.env.example /opt/projects/manga-whisper-background-worker/repo/src/MangaWhisper.BackgroundWorker.Api/.env 2>/dev/null || sudo -u whisper touch /opt/projects/manga-whisper-background-worker/repo/src/MangaWhisper.BackgroundWorker.Api/.env
 
 # Edit the .env file
-sudo -u whisper nano /opt/projects/manga-whisper-background-worker/repo/rc/MangaWhisper.BackgroundWorker.Api/.env
+sudo -u whisper nano /opt/projects/manga-whisper-background-worker/repo/src/MangaWhisper.BackgroundWorker.Api/.env
 ```
 
 **Update the values with your actual credentials:**
@@ -150,20 +167,22 @@ CHECK_INTERVAL_HOURS=4
 
 ```bash
 # Secure the file
-sudo chmod 600 /opt/projects/manga-whisper-background-worker/repo/rc/MangaWhisper.BackgroundWorker.Api/.env
+sudo chmod 600 /opt/projects/manga-whisper-background-worker/repo/src/MangaWhisper.BackgroundWorker.Api/.env
 ```
 
-## Step 09: Test the Bot Manually
+## Step 09: Test the Application Manually
 
 ```bash
-# Switch to hilo user
+# Switch to whisper user
 sudo -u whisper -i
 cd /opt/projects/manga-whisper-background-worker/repo
 
+# Build and run the application
 dotnet build
+dotnet run --project src/MangaWhisper.BackgroundWorker.Api
 
-# Check logs
-tail -f logs/robot.log
+# In another terminal, check logs
+tail -f /opt/projects/manga-whisper-background-worker/repo/logs/background-worker-*.log
 
 # If everything works, exit
 # Ctrl+C to stop
@@ -244,7 +263,7 @@ sudo nano /etc/logrotate.d/mangawhisper-worker
     delaycompress
     missingok
     notifempty
-    create 0640 hilo hilo
+    create 0640 whisper whisper
     sharedscripts
     postrotate
         systemctl reload mangawhisper-worker > /dev/null 2>&1 || true
@@ -258,7 +277,7 @@ sudo nano /etc/logrotate.d/mangawhisper-worker
 `Ctrl+X`, then `Y`, then `Enter`
 ```
 
-## Step 14: Setup Firewall (Optional but Recommended)
+## Step 13: Setup Firewall (Optional but Recommended)
 
 ```bash
 # Install UFW if not present
@@ -298,13 +317,13 @@ sudo tail -f /opt/projects/manga-whisper-background-worker/repo/logs/background-
 sudo journalctl -u mangawhisper-worker -n 100
 ```
 
-### Update the Bot
+### Update the Application
 
 ```bash
-# Stop bot
+# Stop service
 sudo systemctl stop mangawhisper-worker
 
-# Switch to hilo user
+# Switch to whisper user
 sudo -u whisper -i
 cd /opt/projects/manga-whisper-background-worker/repo
 
@@ -316,7 +335,7 @@ git pull
 # Build project
 dotnet build
 
-# Exit hilo user
+# Exit whisper user
 exit
 
 # Start bot
@@ -333,8 +352,13 @@ sudo systemctl status mangawhisper-worker
 sudo -u postgres psql -d manga_whisper
 
 # View checkers
+SELECT * FROM "MangaCheckers" ORDER BY "CreatedAt" DESC LIMIT 10;
 
 # View recent chapters
+SELECT * FROM "Chapters" ORDER BY "CreatedAt" DESC LIMIT 10;
+
+# View all mangas
+SELECT * FROM "Mangas" ORDER BY "Title";
 
 # Exit
 \q
@@ -372,7 +396,7 @@ chromium-browser --headless --disable-gpu --dump-dom https://www.google.com
 sudo systemctl status postgresql
 
 # Test connection
-psql -U whisper_user -d mangawhisper-worker -h localhost
+psql -U whisper_user -d manga_whisper -h localhost
 
 # Check pg_hba.conf allows local connections
 sudo nano /etc/postgresql/16/main/pg_hba.conf
@@ -446,10 +470,11 @@ sudo crontab -e
 
 ## Done! 🎉
 
-Your bot is now running 24/7 on your VPS. It will:
+Your MangaWhisper Background Worker is now running 24/7 on your VPS. It will:
 
 - ✅ Start automatically on boot
 - ✅ Restart automatically if it crashes
+- ✅ Check for new manga chapters based on your configured schedule
 - ✅ Log everything to files you can monitor
 
 Check status anytime with: `sudo systemctl status mangawhisper-worker`
