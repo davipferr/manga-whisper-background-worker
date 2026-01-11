@@ -52,8 +52,9 @@ try
     // Factories
     builder.Services.AddScoped<IChapterCheckerFactory, ChapterCheckerFactory>();
 
-    // Background service
+    // Background services
     builder.Services.AddHostedService<ChapterCheckingBackgroundService>();
+    builder.Services.AddHostedService<ChapterBatchScrapingBackgroundService>();
 
     var host = builder.Build();
 
