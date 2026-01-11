@@ -37,13 +37,5 @@ public interface IChapterCheckingService
     /// Manually triggers a check for all active checkers
     /// </summary>
     /// <param name="cancellationToken">Cancellation token</param>
-    Task CheckAllActiveCheckersManuallyAsync(CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Manually triggers a check for all active checkers
-    /// </summary>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <param name="returnChapters">Whether to return the list of new chapters found</param>
-    /// <returns>A list of new chapters if returnChapters is true; otherwise, an empty list</returns>
-    Task<List<Chapter>> CheckAllActiveCheckersManuallyAsync(CancellationToken cancellationToken, bool returnChapters);
+    Task CheckAllActiveCheckersAsync(CancellationToken cancellationToken = default);
 }

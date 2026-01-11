@@ -74,10 +74,10 @@ public abstract class BaseChapterChecker : IChapterChecker
             var expectedChapterNumber = checker.GetExpectedNextChapter();
             var chapterUrl = BuildChapterUrl(expectedChapterNumber);
 
-            // Check if this scraper requires Selenium
+            // Check if this scraper don't requires Selenium to check chapter existence
             if (!RequiresSelenium)
             {
-                // Use HTTP-only check
+                // Use HTTP-only check chapter existence
                 var httpResult = await CheckChapterExistsViaHttp(chapterUrl);
                 return httpResult;
             }

@@ -141,7 +141,7 @@ public class ChapterCheckingBackgroundService : BackgroundService
         using var scope = _serviceProvider.CreateScope();
         var checkingService = scope.ServiceProvider.GetRequiredService<IChapterCheckingService>();
 
-        await checkingService.CheckAllActiveCheckersManuallyAsync(cancellationToken);
+        await checkingService.CheckAllActiveCheckersAsync(cancellationToken);
     }
 
     public override async Task StopAsync(CancellationToken cancellationToken)

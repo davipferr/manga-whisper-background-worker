@@ -64,4 +64,12 @@ public class MangaCheckerRepository : IMangaCheckerRepository
             .Where(mc => mc.Manga.Title.Contains(mangaTitle))
             .ToListAsync();
     }
+
+    public async Task<MangaChecker?> GetByIdAsNoTrackingAsync(int id)
+    {
+        return await _context.MangaCheckers
+            .AsNoTracking()
+            .Include(m => m.Manga)
+            .FirstOrDefaultAsync(m => m.Id == id);
+    }
 }

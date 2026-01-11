@@ -12,4 +12,5 @@ public interface IMangaCheckerRepository
     Task UpdateStatusAsync(int checkerId, MangaCheckerStatus status);
     Task SaveChangesAsync();
     Task<IEnumerable<MangaChecker>> GetByMangaTitleAsync(string mangaTitle);
+    Task<MangaChecker?> GetByIdAsNoTrackingAsync(int id);
 }
