@@ -251,7 +251,7 @@ sudo systemctl status mangawhisper-worker
 sudo journalctl -u mangawhisper-worker -f
 
 # Or check the application logs
-sudo tail -f /opt/projects/manga-whisper-background-worker/repo/logs/background-worker-*.log
+sudo tail -f /opt/projects/manga-whisper-background-worker/repo/logs/background-worker.log
 
 # Check systemd stdout/stderr
 sudo tail -f /opt/projects/manga-whisper-background-worker/logs/systemd-stdout.log
@@ -322,7 +322,7 @@ sudo systemctl status mangawhisper-worker   # Check status
 sudo journalctl -u mangawhisper-worker -f
 
 # Application logs
-sudo tail -f /opt/projects/manga-whisper-background-worker/repo/logs/background-worker-*.log
+sudo tail -f /opt/projects/manga-whisper-background-worker/repo/logs/background-worker.log
 
 # Last 100 lines
 sudo journalctl -u mangawhisper-worker -n 100

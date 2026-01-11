@@ -14,7 +14,7 @@ DotNetEnv.Env.Load();
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
-    .WriteTo.File("logs/background-worker-.log", rollingInterval: RollingInterval.Day)
+    .WriteTo.File("logs/background-worker.log")
     .CreateLogger();
 
 try
