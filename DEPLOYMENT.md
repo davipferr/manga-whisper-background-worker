@@ -25,10 +25,24 @@ sudo apt update && sudo apt upgrade -y
 ## Step 3: Install Required Packages
 
 ```bash
-sudo apt install -y postgresql postgresql-contrib git curl
+# Install basic packages
+sudo apt install -y postgresql postgresql-contrib git curl chromium-browser
 
-sudo apt-get install -y chromium-browser dotnet-sdk-9.0
+# Install .NET SDK 8.0 (LTS - recommended for production)
+sudo apt install -y dotnet-sdk-8.0
+
+# Verify installation
+dotnet --version
 ```
+
+**Alternative: If you specifically need .NET 10.0:**
+
+```bash
+sudo apt install -y dotnet-sdk-10.0
+dotnet --version
+```
+
+**Note:** Ubuntu 24.04 doesn't have .NET SDK 9.0 in its repositories. Use .NET 8.0 (LTS) for production stability.
 
 ## Step 4: Setup PostgreSQL
 
