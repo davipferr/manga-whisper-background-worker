@@ -79,7 +79,7 @@ echo "⚠️  Note: Tables will be created after deploying the code (Step 6)"
 sudo useradd -r -m -s /bin/bash -d /opt/projects/manga-whisper-background-worker whisper
 
 # Create directory structure
-sudo mkdir -p /opt/projects/manga-whisper-background-worker/{logs,data}
+sudo mkdir -p /opt/projects/manga-whisper-background-worker/{logs}
 sudo chown -R whisper:whisper /opt/projects/manga-whisper-background-worker
 ```
 
@@ -366,6 +366,33 @@ sudo systemctl start mangawhisper-worker
 
 # Check it started ok
 sudo systemctl status mangawhisper-worker
+```
+
+### Update Database with New Migrations
+
+When you have **new migrations** to apply, you have 3 options:
+
+**Using idempotent script (Safest - Recommended):**
+
+```bash
+# On your local machine (Windows):
+cd manga-whisper\back-end\MangaWhisper.Api
+dotnet ef migrations script --project ..\MangaWhisper.Infrastructure\MangaWhisper.Infrastructure.csproj --startup-project . --idempotent --output migration_update.sql
+
+# Transfer to VPS
+scp migration_update.sql root@YOUR_VPS_IP:/tmp/
+
+# On VPS - Apply the script (it will skip already applied migrations)
+sudo -u postgres psql -d manga_whisper -f /tmp/migration_update.sql
+
+echo "✅ Database updated with new migrations!"
+```
+
+**How to check which migrations are already applied:**
+
+```bash
+# On VPS
+sudo -u postgres psql -d manga_whisper -c "SELECT * FROM \"__EFMigrationsHistory\" ORDER BY \"MigrationId\";"
 ```
 
 ### Database Management
