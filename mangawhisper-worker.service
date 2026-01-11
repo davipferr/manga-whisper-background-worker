@@ -4,8 +4,8 @@ After=network.target
 
 [Service]
 Type=notify
-User=YOUR_USER
-WorkingDirectory=/opt/mangawhisper-worker/src/MangaWhisper.BackgroundWorker.Api
+User=whisper
+WorkingDirectory=/opt/projects/manga-whisper-background-worker/repo/src/MangaWhisper.BackgroundWorker.Api
 ExecStart=/usr/bin/dotnet run
 Restart=always
 RestartSec=10

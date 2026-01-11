@@ -195,9 +195,6 @@ cd /opt/projects/manga-whisper-background-worker/repo
 dotnet build
 dotnet run --project src/MangaWhisper.BackgroundWorker.Api
 
-# In another terminal, check logs
-tail -f /opt/projects/manga-whisper-background-worker/repo/logs/background-worker-*.log
-
 # If everything works, exit
 # Ctrl+C to stop
 exit
