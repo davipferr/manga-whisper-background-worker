@@ -393,13 +393,77 @@ sudo -u postgres psql -d manga_whisper
 SELECT * FROM "MangaCheckers" ORDER BY "CreatedAt" DESC LIMIT 10;
 
 # View recent chapters
-SELECT * FROM "Chapters" ORDER BY "CreatedAt" DESC LIMIT 10;
+SELECT * FROM "Chapters" ORDER BY "ExtractedAt" DESC LIMIT 10;
 
 # View all mangas
 SELECT * FROM "Mangas" ORDER BY "Title";
 
 # Exit
 \q
+```
+
+### Connecting to Database from External Machine
+
+**Step 1: Configure Firewall:**
+
+```bash
+# Check firewall status
+sudo ufw status
+
+# Allow PostgreSQL port
+sudo ufw allow 5432/tcp
+```
+
+**Step 2: Configure PostgreSQL to Accept External Connections:**
+
+```bash
+# Edit postgresql.conf to listen on all addresses
+sudo nano /etc/postgresql/*/main/postgresql.conf
+```
+
+Find and change:
+
+```conf
+listen_addresses = '*'
+```
+
+**Step 3: Configure Client Authentication:**
+
+```bash
+# Edit pg_hba.conf to allow your IP
+sudo nano /etc/postgresql/*/main/pg_hba.conf
+```
+
+Add this line:
+
+```conf
+host    all             all            0.0.0.0/0    scram-sha-256
+```
+
+**Step 4: Restart PostgreSQL:**
+
+```bash
+sudo systemctl restart postgresql
+```
+
+**Step 5: Test Connection:**
+
+From your local machine:
+
+```bash
+# Using telnet (Linux/Mac)
+telnet your-vps-ip 5432
+```
+
+```powershell
+# Using PowerShell (Windows)
+Test-NetConnection -ComputerName your-vps-ip -Port 5432
+```
+
+**Connection String Example:**
+
+```bash
+DefaultConnection=Host=your-vps-ip;Database=manga_whisper;Username=whisper_user;Password=your_password;Port=5432
 ```
 
 ### Check if Bot is Running
