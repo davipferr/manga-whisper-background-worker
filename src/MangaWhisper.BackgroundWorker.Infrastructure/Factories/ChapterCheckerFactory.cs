@@ -69,7 +69,26 @@ public class ChapterCheckerFactory : IChapterCheckerFactory
         chromeOptions.AddArgument("--no-sandbox");
         chromeOptions.AddArgument("--disable-dev-shm-usage");
 
-        return new ChromeDriver(chromeOptions);
+        // In Docker, Chromium and its matching chromedriver come from the OS packages (see Dockerfile).
+        // When these variables are not set (e.g. `dotnet run` on Windows), Selenium Manager
+        // locates Chrome and downloads the matching driver automatically.
+        var chromeBinary = Environment.GetEnvironmentVariable("CHROME_BINARY");
+        if (!string.IsNullOrWhiteSpace(chromeBinary))
+        {
+            chromeOptions.BinaryLocation = chromeBinary;
+        }
+
+        var chromeDriverPath = Environment.GetEnvironmentVariable("CHROMEDRIVER_PATH");
+        if (string.IsNullOrWhiteSpace(chromeDriverPath))
+        {
+            return new ChromeDriver(chromeOptions);
+        }
+
+        var driverService = ChromeDriverService.CreateDefaultService(
+            Path.GetDirectoryName(chromeDriverPath),
+            Path.GetFileName(chromeDriverPath));
+
+        return new ChromeDriver(driverService, chromeOptions);
     }
 
     public void Dispose()

@@ -283,7 +283,8 @@ public class ChapterCheckingService : IChapterCheckingService
                         checker.Manga?.Title ?? "Unknown", checker.SiteIdentifier);
                     await UpdateCheckerStatusAsync(checker.Id, MangaCheckerStatus.Idle);
 
-                    break;
+                    // Move on to the next checker; one manga without news must not skip the others
+                    continue;
                 }
 
                 try

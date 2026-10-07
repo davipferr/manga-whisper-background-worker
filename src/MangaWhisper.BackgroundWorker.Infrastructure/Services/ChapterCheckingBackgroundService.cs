@@ -25,8 +25,8 @@ public class ChapterCheckingBackgroundService : BackgroundService
         _logger = logger;
         _configuration = configuration;
         
-        // Initialize BRT timezone (UTC-3)
-        _brtTimeZone = TimeZoneInfo.FindSystemTimeZoneById("E. South America Standard Time");
+        // Initialize BRT timezone (UTC-3). IANA id works on Linux (Docker) and on Windows (.NET 6+ with ICU)
+        _brtTimeZone = TimeZoneInfo.FindSystemTimeZoneById("America/Sao_Paulo");
         
         // Parse allowed days from configuration
         var daysConfig = _configuration["CHECK_DAYS_OF_WEEK"] ?? "0,1,2,3,4,5,6";

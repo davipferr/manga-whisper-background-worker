@@ -1,10 +1,13 @@
 # MangaWhisper Background Worker
 
-A standalone background service for checking manga chapter updates using Selenium web scraping. This project was extracted from the main MangaWhisper application to run independently on a VPS due to Azure DevOps Selenium limitations.
+A standalone background service that checks for new manga chapters by scraping the source sites with Selenium (headless Chromium).
+
+This project was split from the main [MangaWhisper](../manga-whisper) application because the API was hosted on a plan that stops idle apps, and this worker has to be always running. It shares the PostgreSQL database with the API; the two applications never call each other.
 
 ## Overview
 
-This background worker connects to the same database as the main MangaWhisper API and automatically checks for new manga chapters at configured intervals (default: 4 hours).
+- `ChapterCheckingBackgroundService` runs on a schedule (days of week, start hour and interval, all in BRT) and, for every active `MangaChecker`, checks whether chapter `LastKnownChapter + 1` exists and saves it.
+- `ChapterBatchScrapingBackgroundService` is an optional one-off backfill (`ENABLE_BATCH_SCRAPING=true`) that walks every chapter until one is missing.
 
 ## Architecture
 
@@ -16,97 +19,50 @@ The project follows Clean Architecture with layered design:
 - **Infrastructure Layer**: Data access, repositories, Selenium implementation
 - **Common Layer**: Shared enums and constants
 
-## Prerequisites
+## Running locally (Docker)
 
-- .NET 10.0 SDK
-- PostgreSQL database (shared with main API)
-- Chrome/Chromium browser (for Selenium)
-- ChromeDriver (included via NuGet package)
+The worker is started by the `docker-compose.yml` in the **manga-whisper** repository, together with PostgreSQL, the API and the front-end. Both repositories must be sibling folders:
 
-## Setup
+```text
+<parent>/
+├── manga-whisper/
+└── manga-whisper-background-worker/
+```
 
-1. **Clone the repository**
+See the manga-whisper README for the commands. The worker container logs are available with:
 
-   ```bash
-   git clone <your-repository-url>
-   cd MangaWhisper.BackgroundWorker
-   ```
+```bash
+docker compose logs -f worker
+```
 
-2. **Configure environment variables**
-
-   ```bash
-   cd src/MangaWhisper.BackgroundWorker.Api
-   cp .env.example .env
-   ```
-
-3. **Update `.env` with your database connection**
-
-   ```env
-   DefaultConnection=Host=your-host;Database=mangawhisper;Username=your-user;Password=your-password;Port=5432
-   ```
-
-4. **Restore dependencies**
-
-   ```bash
-   cd manga-whisper-background-worker
-
-   dotnet restore
-   ```
-
-5. **Build the project**
-
-   ```bash
-   dotnet build
-   ```
-
-6. **Run the worker**
-
-   ```bash
-   cd src/MangaWhisper.BackgroundWorker.Api
-   dotnet run
-   ```
-
-### Running on Windows
-
-Run as a Windows Service using the included `Microsoft.Extensions.Hosting.WindowsServices` package.
+The image is based on Debian with the `chromium` and `chromium-driver` packages, so the browser and the driver always have matching versions (`CHROME_BINARY` / `CHROMEDRIVER_PATH` are set in the `Dockerfile`).
 
 ## Configuration
 
-### Check Interval
+All settings are environment variables (set in the manga-whisper `.env` file and passed by docker-compose):
 
-Set via environment variable in `.env`:
-
-```env
-CHECK_INTERVAL_HOURS=6
-```
-
-## Logs
-
-Logs are written to:
-
-- Console output
-- `logs/background-worker-YYYYMMDD.log` (daily rolling)
+| Variable | Description |
+| --- | --- |
+| `DefaultConnection` | PostgreSQL connection string (same database as the API) |
+| `CHECK_DAYS_OF_WEEK` | Comma-separated days to run: 0=Sunday ... 6=Saturday |
+| `CHECK_START_HOUR` | Start hour in BRT (0-23) |
+| `CHECK_INTERVAL_HOURS` | Hours between checks |
+| `ENABLE_BATCH_SCRAPING` | `true` to run the one-off backfill on startup |
+| `STOP_APP_AFTER_BATCH_SCRAPING` | `true` to stop the app when the backfill ends |
 
 ## Database
 
-This worker connects to the same PostgreSQL database as the main MangaWhisper API. Ensure:
+The schema is owned by the manga-whisper repository (`database/init/*.sql`); this project has no migrations and never creates tables. The entities here must match those tables.
 
-- Database migrations are applied from the main project
-- Connection string has read/write access to tables
+## Running without Docker (optional)
 
-## Troubleshooting
+For debugging from the IDE, copy `src/MangaWhisper.BackgroundWorker.Api/.env.example` to `.env`, point `DefaultConnection` to `localhost` (the Docker PostgreSQL publishes port 5432) and run:
 
-### Selenium Issues
+```bash
+dotnet run --project src/MangaWhisper.BackgroundWorker.Api
+```
 
-- Ensure Chrome/Chromium is installed
-- Check ChromeDriver version matches Chrome version
-- Verify headless mode works: `chromium-browser --headless --disable-gpu`
-
-### Database Connection
-
-- Test connection string manually
-- Verify PostgreSQL allows remote connections
-- Check firewall rules
+Without `CHROME_BINARY` / `CHROMEDRIVER_PATH`, Selenium Manager finds your local Chrome and downloads the matching driver.
 
 ## License
 
