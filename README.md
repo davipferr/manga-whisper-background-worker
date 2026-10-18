@@ -64,6 +64,25 @@ dotnet run --project src/MangaWhisper.BackgroundWorker.Api
 
 Without `CHROME_BINARY` / `CHROMEDRIVER_PATH`, Selenium Manager finds your local Chrome and downloads the matching driver.
 
+## Agent skills
+
+[Agent Skills](https://www.skills.sh/) for Claude Code (`.claude/skills/`) and Codex / GitHub Copilot (`.agents/skills/`), installed with the `skills` CLI and listed in `skills-lock.json`:
+
+| Skill | Source | Use it for |
+| --- | --- | --- |
+| `optimizing-ef-core-queries` | `dotnet/skills` | Reviewing EF Core queries in the repositories and background jobs (official) |
+| `analyzing-dotnet-performance` | `dotnet/skills` | Finding .NET performance anti-patterns (official) |
+| `csharp-async` | `github/awesome-copilot` | Async/await best practices for the background services |
+| `find-skills` | `vercel-labs/skills` | Finding more skills on skills.sh |
+
+To add another one (installs copies, so the skills work right after a clone):
+
+```bash
+npx skills add <owner/repo> --skill <name> --agent claude-code codex --copy --yes
+```
+
+Update them with `npx skills update --project --yes`.
+
 ## License
 
 Private - All rights reserved
