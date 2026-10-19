@@ -14,7 +14,8 @@ public interface IChapterCheckingService
     /// Checks if a new chapter exists for the given manga checker
     /// </summary>
     /// <param name="checker">The manga checker to verify</param>
-    /// <returns>True if a new chapter exists, false otherwise</returns>
+    /// <returns>True if a new chapter exists, false if it is not released yet</returns>
+    /// <exception cref="MangaWhisper.Domain.Exceptions.ChapterCheckException">The site could not be checked</exception>
     Task<bool> HasNewChapterAsync(MangaChecker checker);
 
     /// <summary>
@@ -22,8 +23,9 @@ public interface IChapterCheckingService
     /// This method should only be called after HasNewChapterAsync returns true
     /// </summary>
     /// <param name="checker">The manga checker to extract chapter info from</param>
-    /// <returns>The new chapter information or null if extraction fails</returns>
-    Task<Chapter?> ExtractNewChapterInfoAsync(MangaChecker checker);
+    /// <returns>The new chapter information</returns>
+    /// <exception cref="MangaWhisper.Domain.Exceptions.ChapterCheckException">The chapter page could not be read</exception>
+    Task<Chapter> ExtractNewChapterInfoAsync(MangaChecker checker);
 
     /// <summary>
     /// Processes all available chapters for a specific manga checker

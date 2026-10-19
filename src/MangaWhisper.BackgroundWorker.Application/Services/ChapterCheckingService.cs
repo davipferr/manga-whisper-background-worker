@@ -93,32 +93,17 @@ public class ChapterCheckingService : IChapterCheckingService
         }
     }
 
+    // Scraping errors are not caught here: they must fail the run instead of looking like "no new chapter"
     public async Task<bool> HasNewChapterAsync(MangaChecker checker)
     {
-        try
-        {
-            var chapterChecker = _checkerFactory.CreateChecker(checker.SiteIdentifier);
-            return await chapterChecker.HasNewChapterAsync(checker);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error checking if new chapter exists for checker {CheckerId}", checker.Id);
-            return false;
-        }
+        var chapterChecker = _checkerFactory.CreateChecker(checker.SiteIdentifier);
+        return await chapterChecker.HasNewChapterAsync(checker);
     }
 
-    public async Task<Chapter?> ExtractNewChapterInfoAsync(MangaChecker checker)
+    public async Task<Chapter> ExtractNewChapterInfoAsync(MangaChecker checker)
     {
-        try
-        {
-            var chapterChecker = _checkerFactory.CreateChecker(checker.SiteIdentifier);
-            return await chapterChecker.ExtractNewChapterInfoAsync(checker);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error extracting new chapter info for checker {CheckerId}", checker.Id);
-            return null;
-        }
+        var chapterChecker = _checkerFactory.CreateChecker(checker.SiteIdentifier);
+        return await chapterChecker.ExtractNewChapterInfoAsync(checker);
     }
 
     public async Task UpdateCheckerStatusAsync(int checkerId, MangaCheckerStatus status)
@@ -145,13 +130,16 @@ public class ChapterCheckingService : IChapterCheckingService
             {
                 _logger.LogInformation("Chapter {ChapterNumber} for manga {MangaId} already exists. Skipping save.",
                     newChapter.Number, newChapter.MangaId);
-                return;
+            }
+            else
+            {
+                await _chapterRepository.AddAsync(newChapter);
+                await _chapterRepository.SaveChangesAsync();
             }
 
-            await _chapterRepository.AddAsync(newChapter);
-            await _chapterRepository.SaveChangesAsync();
-
-            checker.LastKnownChapter = newChapter.Number;
+            // Advance even when the chapter was already stored (e.g. the admin lowered the last known chapter),
+            // otherwise the next check would look for this same chapter again forever
+            checker.LastKnownChapter = Math.Max(checker.LastKnownChapter, newChapter.Number);
             await _mangaCheckerRepository.UpdateStatusAsync(checker.Id, checker.CheckerStatus);
 
             await _mangaCheckerRepository.SaveChangesAsync();
@@ -183,69 +171,32 @@ public class ChapterCheckingService : IChapterCheckingService
                 throw new ArgumentException($"Checker with ID {checkerId} not found");
             }
 
-            bool hasMoreChapters = true;
-            int processedCount = 0;
-
-            while (hasMoreChapters && !cancellationToken.IsCancellationRequested)
+            // Stops at the first chapter that is not released yet; a scraping error ends the backfill by
+            // propagating (the chapters saved until then stay saved)
+            while (!cancellationToken.IsCancellationRequested)
             {
-                try
+                checker = await _mangaCheckerRepository.GetByIdAsync(checkerId);
+
+                if (checker == null)
                 {
-                    checker = await _mangaCheckerRepository.GetByIdAsync(checkerId);
-
-                    if (checker == null)
-                    {
-                        _logger.LogWarning("Checker {CheckerId} no longer exists", checkerId);
-                        break;
-                    }
-
-                    var hasNewChapter = await HasNewChapterAsync(checker);
-
-                    if (!hasNewChapter)
-                    {
-                        _logger.LogInformation("No more chapters available for manga {MangaTitle}. Total processed: {Count}",
-                            checker.Manga?.Title ?? "Unknown", processedCount);
-
-                        hasMoreChapters = false;
-                        break;
-                    }
-
-                    var newChapter = await ProcessCheckerAsync(checker, cancellationToken);
-
-                    if (newChapter != null)
-                    {
-                        foundChapters.Add(newChapter);
-                        processedCount++;
-
-                        _logger.LogInformation("Successfully processed chapter {ChapterNumber} for manga {MangaTitle}. Total: {Count}",
-                            newChapter.Number, checker.Manga?.Title ?? "Unknown", processedCount);
-                    }
-                    else
-                    {
-                        _logger.LogWarning("No new chapter found for manga {MangaTitle} from site {SiteIdentifier}. Stopping batch processing.",
-                            checker.Manga?.Title ?? "Unknown", checker.SiteIdentifier);
-
-                        hasMoreChapters = false;
-                    }
+                    _logger.LogWarning("Checker {CheckerId} no longer exists", checkerId);
+                    break;
                 }
-                catch (OperationCanceledException)
+
+                var hasNewChapter = await HasNewChapterAsync(checker);
+
+                if (!hasNewChapter)
                 {
-                    _logger.LogInformation("Processing cancelled for checker {CheckerId} after {Count} chapters", checkerId, processedCount);
-                    throw;
+                    _logger.LogInformation("No more chapters available for manga {MangaTitle}. Total processed: {Count}",
+                        checker.Manga?.Title ?? "Unknown", foundChapters.Count);
+                    break;
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error processing chapter for checker {CheckerId}. Stopping batch processing.", checkerId);
-                    hasMoreChapters = false;
-                    
-                    try
-                    {
-                        await UpdateCheckerStatusAsync(checkerId, MangaCheckerStatus.Error);
-                    }
-                    catch (Exception updateEx)
-                    {
-                        _logger.LogError(updateEx, "Failed to update checker status to Error for checker {CheckerId}", checkerId);
-                    }
-                }
+
+                var newChapter = await ProcessCheckerAsync(checker, cancellationToken);
+                foundChapters.Add(newChapter);
+
+                _logger.LogInformation("Successfully processed chapter {ChapterNumber} for manga {MangaTitle}. Total: {Count}",
+                    newChapter.Number, checker.Manga?.Title ?? "Unknown", foundChapters.Count);
             }
 
             _logger.LogInformation("Completed processing all available chapters for checker {CheckerId}. Total chapters found: {Count}",
@@ -276,12 +227,12 @@ public class ChapterCheckingService : IChapterCheckingService
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        var newChapter = await ProcessCheckerAsync(checker, cancellationToken);
+        await ProcessCheckerAsync(checker, cancellationToken);
 
-        return newChapter != null ? 1 : 0;
+        return 1;
     }
 
-    private async Task<Chapter?> ProcessCheckerAsync(MangaChecker checker, CancellationToken cancellationToken)
+    private async Task<Chapter> ProcessCheckerAsync(MangaChecker checker, CancellationToken cancellationToken)
     {
         _logger.LogInformation("Checking manga {MangaTitle} with site {SiteIdentifier}",
             checker.Manga?.Title ?? "Unknown", checker.SiteIdentifier);
@@ -295,14 +246,6 @@ public class ChapterCheckingService : IChapterCheckingService
             checker.SiteIdentifier);
 
         var newChapter = await ExtractNewChapterInfoAsync(checker);
-
-        if (newChapter == null)
-        {
-            _logger.LogWarning("New chapter was detected but failed to extract chapter information for manga {MangaTitle} from site {SiteIdentifier}",
-                checker.Manga?.Title ?? "Unknown", checker.SiteIdentifier);
-            await UpdateCheckerStatusAsync(checker.Id, MangaCheckerStatus.Error);
-            return null;
-        }
 
         await SaveNewChapterAsync(newChapter, checker);
         await UpdateCheckerStatusAsync(checker.Id, MangaCheckerStatus.Idle);

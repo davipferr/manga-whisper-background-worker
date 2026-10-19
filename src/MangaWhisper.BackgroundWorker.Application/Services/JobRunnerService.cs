@@ -121,6 +121,9 @@ public class JobRunnerService : IJobRunnerService
 
         _logger.LogInformation("Run {RunId} started: {Type} for checker {CheckerId}", run.Id, run.Type, run.MangaCheckerId);
 
+        // Lets a failed run report the chapters it saved before failing (a backfill saves them one by one)
+        var lastKnownChapterBefore = (await _mangaCheckerRepository.GetByIdAsNoTrackingAsync(run.MangaCheckerId))?.LastKnownChapter;
+
         try
         {
             await _chapterCheckingService.UpdateCheckerStatusAsync(run.MangaCheckerId, MangaCheckerStatus.Checking);
@@ -160,7 +163,7 @@ public class JobRunnerService : IJobRunnerService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Run {RunId} failed", run.Id);
-            run.Fail(ex.Message);
+            run.Fail(ex.Message, await CountChaptersAdvancedAsync(run.MangaCheckerId, lastKnownChapterBefore));
 
             try
             {
@@ -178,6 +181,23 @@ public class JobRunnerService : IJobRunnerService
             run.Id, run.Status, run.ChaptersFound);
 
         return true;
+    }
+
+    private async Task<int> CountChaptersAdvancedAsync(int checkerId, int? lastKnownChapterBefore)
+    {
+        try
+        {
+            var checker = await _mangaCheckerRepository.GetByIdAsNoTrackingAsync(checkerId);
+
+            return checker != null && lastKnownChapterBefore.HasValue
+                ? Math.Max(0, checker.LastKnownChapter - lastKnownChapterBefore.Value)
+                : 0;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to count the chapters saved by checker {CheckerId}", checkerId);
+            return 0;
+        }
     }
 
     private async Task RestoreCheckerStatusAsync(int checkerId)

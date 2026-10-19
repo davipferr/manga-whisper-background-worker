@@ -1,10 +1,16 @@
 using Microsoft.Extensions.Logging;
 using OpenQA.Selenium;
 using MangaWhisper.Domain.Entities;
+using MangaWhisper.Domain.Exceptions;
 using MangaWhisper.Domain.Interfaces;
 
 namespace MangaWhisper.Domain.Services;
 
+/// <summary>
+/// Base for the site scrapers. A "no" (chapter not released yet) is returned as false; any other problem
+/// (site unreachable, browser error, page that doesn't look like what the scraper expects) is thrown as
+/// <see cref="ChapterCheckException"/>, so a broken scraper fails the run instead of looking like "no news".
+/// </summary>
 public abstract class BaseChapterChecker : IChapterChecker
 {
     protected readonly IWebDriver webDriver;
@@ -26,98 +32,68 @@ public abstract class BaseChapterChecker : IChapterChecker
 
     protected abstract string GetSiteName();
     protected abstract string BuildChapterUrl(int chapterNumber);
-    protected abstract Task<bool> CheckChapterExistsViaSeleniumRules(string url);
-    protected abstract Task<Chapter?> ExtractNewChapterInfoRulesAsync(string url, int mangaId);
+
+    /// <returns>False when the site says the chapter is not released yet</returns>
+    /// <exception cref="ChapterCheckException">The page is not a chapter nor a "not released" answer</exception>
+    protected abstract Task<bool> CheckChapterExistsViaSeleniumRules(string url, int chapterNumber);
+
+    /// <exception cref="ChapterCheckException">The page is not the expected chapter page</exception>
+    protected abstract Task<Chapter> ExtractNewChapterInfoRulesAsync(string url, int chapterNumber, int mangaId);
 
     private async Task<bool> CheckChapterExistsViaHttp(string url)
     {
-        try
+        using var response = await httpClient.GetAsync(url);
+
+        if (response.IsSuccessStatusCode)
         {
-            using var response = await httpClient.GetAsync(url);
+            return true;
+        }
 
-            if (response.IsSuccessStatusCode)
-            {
-                return true;
-            }
-
-            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-            {
-                return false;
-            }
-
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
             return false;
         }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error checking chapter via HTTP: {Url}", url);
-            return false;
-        }
-    }
 
-    private async Task<bool> CheckChapterExistsViaSelenium(string url)
-    {
-        try
-        {
-            return await CheckChapterExistsViaSeleniumRules(url);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error checking chapter via Selenium: {Url}", url);
-            return false;
-        }
+        throw new ChapterCheckException($"{siteName} answered HTTP {(int)response.StatusCode} for {url}");
     }
 
     public async Task<bool> HasNewChapterAsync(MangaChecker checker)
     {
+        var expectedChapterNumber = checker.GetExpectedNextChapter();
+        var chapterUrl = BuildChapterUrl(expectedChapterNumber);
+
         try
         {
-            var expectedChapterNumber = checker.GetExpectedNextChapter();
-            var chapterUrl = BuildChapterUrl(expectedChapterNumber);
-
             // Check if this scraper don't requires Selenium to check chapter existence
-            if (!RequiresSelenium)
-            {
-                // Use HTTP-only check chapter existence
-                var httpResult = await CheckChapterExistsViaHttp(chapterUrl);
-                return httpResult;
-            }
+            var exists = RequiresSelenium
+                ? await CheckChapterExistsViaSeleniumRules(chapterUrl, expectedChapterNumber)
+                : await CheckChapterExistsViaHttp(chapterUrl);
 
-            return await CheckChapterExistsViaSelenium(chapterUrl);
+            logger.LogInformation("Chapter {ChapterNumber} on {SiteName}: {Result}",
+                expectedChapterNumber, siteName, exists ? "found" : "not released yet");
+
+            return exists;
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not ChapterCheckException and not OperationCanceledException)
         {
-            logger.LogError(ex, "Error checking for new chapter for subscription {SubscriptionId}", checker.Id);
-            return false;
+            throw new ChapterCheckException(
+                $"Could not check chapter {expectedChapterNumber} on {siteName}: {ex.Message}", ex);
         }
     }
 
-    public async Task<Chapter?> ExtractNewChapterInfoAsync(MangaChecker checker)
+    public async Task<Chapter> ExtractNewChapterInfoAsync(MangaChecker checker)
     {
+        var nextChapter = checker.GetExpectedNextChapter();
+        var chapterUrl = BuildChapterUrl(nextChapter);
+
         try
         {
-            var nextChapter = checker.GetExpectedNextChapter();
-            var chapterUrl = BuildChapterUrl(nextChapter);
-
-            if (string.IsNullOrEmpty(chapterUrl))
-            {
-                logger.LogWarning("Could not build chapter URL for chapter {ChapterNumber}", nextChapter);
-                return null;
-            }
-
-            var newChapter = await ExtractNewChapterInfoRulesAsync(chapterUrl, checker.MangaId);
-
-            if (newChapter == null)
-            {
-                logger.LogWarning("Failed to extract chapter information from {SiteName} for URL: {Url}", GetSiteName(), chapterUrl);
-                return null;
-            }
-
-            return newChapter;
+            return await ExtractNewChapterInfoRulesAsync(chapterUrl, nextChapter, checker.MangaId);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not ChapterCheckException and not OperationCanceledException)
         {
-            logger.LogError(ex, "Error extracting chapter information from {SiteName}", GetSiteName());
-            return null;
+            throw new ChapterCheckException(
+                $"Could not read chapter {nextChapter} on {siteName}: {ex.Message}", ex);
         }
     }
 }
