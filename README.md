@@ -2,12 +2,18 @@
 
 A standalone background service that checks for new manga chapters by scraping the source sites with Selenium (headless Chromium).
 
-This project was split from the main [MangaWhisper](../manga-whisper) application because the API was hosted on a plan that stops idle apps, and this worker has to be always running. It shares the PostgreSQL database with the API; the two applications never call each other.
+This project was split from the main [MangaWhisper](../manga-whisper) application because the API was hosted on a plan that stops idle apps, and this worker has to be always running. It shares the PostgreSQL database with the API; the two applications never call each other. The API decides what to scrape (the admin creates jobs in the control panel) and this worker only executes it.
 
 ## Overview
 
-- `ChapterCheckingBackgroundService` runs on a schedule (days of week, start hour and interval, all in BRT) and, for every active `MangaChecker`, checks whether chapter `LastKnownChapter + 1` exists and saves it.
-- `ChapterBatchScrapingBackgroundService` is an optional one-off backfill (`ENABLE_BATCH_SCRAPING=true`) that walks every chapter until one is missing.
+The worker has no schedule of its own and runs nothing just because it started.
+
+- `JobRunnerBackgroundService` polls the database every 30 seconds. It turns the enabled `ScrapingJobs` whose `NextRunAt` has passed into Pending `JobRuns` (moving `NextRunAt` to the next cron occurrence, in BRT) and then executes the Pending runs one at a time:
+  - `CheckNext`: checks once whether chapter `LastKnownChapter + 1` exists and saves it.
+  - `Backfill`: walks every chapter from `LastKnownChapter + 1` until one is missing.
+- On startup nothing is executed: runs left `Running` by a previous process are marked failed, `Pending` ones are cancelled, and jobs whose next run is already in the past are moved to their next future occurrence (missed runs are skipped).
+- Scheduled jobs skip paused checkers (`IsActive = false`); "Run now" requests run anyway.
+- `WorkerHeartbeatBackgroundService` writes `WorkerHeartbeats.LastSeenAt` every 30 seconds, so the admin panel can show whether the worker is running.
 
 ## Architecture
 
@@ -44,11 +50,8 @@ All settings are environment variables (set in the manga-whisper `.env` file and
 | Variable | Description |
 | --- | --- |
 | `DefaultConnection` | PostgreSQL connection string (same database as the API) |
-| `CHECK_DAYS_OF_WEEK` | Comma-separated days to run: 0=Sunday ... 6=Saturday |
-| `CHECK_START_HOUR` | Start hour in BRT (0-23) |
-| `CHECK_INTERVAL_HOURS` | Hours between checks |
-| `ENABLE_BATCH_SCRAPING` | `true` to run the one-off backfill on startup |
-| `STOP_APP_AFTER_BATCH_SCRAPING` | `true` to stop the app when the backfill ends |
+
+There are no schedule settings: jobs are created in the admin panel and stored in the database.
 
 ## Database
 

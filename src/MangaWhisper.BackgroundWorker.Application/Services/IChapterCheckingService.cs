@@ -34,8 +34,10 @@ public interface IChapterCheckingService
     Task<List<Chapter>> ProcessAllAvailableChaptersForCheckerAsync(int checkerId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Manually triggers a check for all active checkers
+    /// Looks once for chapter LastKnownChapter + 1 of a manga checker and saves it when found
     /// </summary>
+    /// <param name="checkerId">The ID of the manga checker to check</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    Task CheckAllActiveCheckersAsync(CancellationToken cancellationToken = default);
+    /// <returns>The number of chapters saved (0 or 1)</returns>
+    Task<int> CheckNextChapterAsync(int checkerId, CancellationToken cancellationToken = default);
 }

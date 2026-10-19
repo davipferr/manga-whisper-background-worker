@@ -45,16 +45,20 @@ try
     builder.Services.AddScoped<IMangaCheckerRepository, MangaCheckerRepository>();
     builder.Services.AddScoped<IChapterRepository, ChapterRepository>();
     builder.Services.AddScoped<IMangaRepository, MangaRepository>();
+    builder.Services.AddScoped<IScrapingJobRepository, ScrapingJobRepository>();
+    builder.Services.AddScoped<IJobRunRepository, JobRunRepository>();
+    builder.Services.AddScoped<IWorkerHeartbeatRepository, WorkerHeartbeatRepository>();
 
     // Services
     builder.Services.AddScoped<IChapterCheckingService, ChapterCheckingService>();
+    builder.Services.AddScoped<IJobRunnerService, JobRunnerService>();
 
     // Factories
     builder.Services.AddScoped<IChapterCheckerFactory, ChapterCheckerFactory>();
 
-    // Background services
-    builder.Services.AddHostedService<ChapterCheckingBackgroundService>();
-    builder.Services.AddHostedService<ChapterBatchScrapingBackgroundService>();
+    // Background services: the worker only executes the jobs the admin creates through the API
+    builder.Services.AddHostedService<WorkerHeartbeatBackgroundService>();
+    builder.Services.AddHostedService<JobRunnerBackgroundService>();
 
     var host = builder.Build();
 
