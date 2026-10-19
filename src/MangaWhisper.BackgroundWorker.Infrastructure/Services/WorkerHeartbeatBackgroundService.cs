@@ -48,4 +48,22 @@ public class WorkerHeartbeatBackgroundService : BackgroundService
         {
         }
     }
+
+    // On a clean shutdown (docker compose stop/down) the admin panel shows the worker as stopped right away,
+    // instead of waiting for the heartbeat to go stale
+    public override async Task StopAsync(CancellationToken cancellationToken)
+    {
+        await base.StopAsync(cancellationToken);
+
+        try
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var repository = scope.ServiceProvider.GetRequiredService<IWorkerHeartbeatRepository>();
+            await repository.MarkStoppedAsync(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to record the worker shutdown");
+        }
+    }
 }

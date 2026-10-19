@@ -150,7 +150,7 @@ public class JobRunnerService : IJobRunnerService
             {
                 await _chapterCheckingService.UpdateCheckerStatusAsync(run.MangaCheckerId,
                     checker.IsActive ? MangaCheckerStatus.Idle : MangaCheckerStatus.Stopped);
-                run.Succeed(chaptersFound);
+                run.Succeed(chaptersFound, DescribeResult(chaptersFound, checker));
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -181,6 +181,20 @@ public class JobRunnerService : IJobRunnerService
             run.Id, run.Status, run.ChaptersFound);
 
         return true;
+    }
+
+    // Both job types save consecutive chapters and stop at the first one that is missing,
+    // so the checker's last known chapter tells which chapters were saved and which one is next
+    private static string DescribeResult(int chaptersFound, MangaChecker checker)
+    {
+        var notReleased = $"Chapter {checker.GetExpectedNextChapter()} is not released yet.";
+
+        return chaptersFound switch
+        {
+            0 => notReleased,
+            1 => $"Chapter {checker.LastKnownChapter} saved.",
+            _ => $"Chapters {checker.LastKnownChapter - chaptersFound + 1} to {checker.LastKnownChapter} saved. {notReleased}"
+        };
     }
 
     private async Task<int> CountChaptersAdvancedAsync(int checkerId, int? lastKnownChapterBefore)

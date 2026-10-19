@@ -4,7 +4,7 @@ namespace MangaWhisper.Domain.Entities;
 
 public class JobRun
 {
-    public const int ErrorMessageMaxLength = 1000;
+    public const int MessageMaxLength = 1000;
 
     public int Id { get; set; }
     public int MangaCheckerId { get; set; }
@@ -15,6 +15,7 @@ public class JobRun
     public DateTime? StartedAt { get; set; }
     public DateTime? FinishedAt { get; set; }
     public int ChaptersFound { get; set; }
+    public string? ResultMessage { get; set; }
     public string? ErrorMessage { get; set; }
 
     public virtual MangaChecker MangaChecker { get; set; } = null!;
@@ -26,10 +27,11 @@ public class JobRun
         StartedAt = DateTime.UtcNow;
     }
 
-    public void Succeed(int chaptersFound)
+    public void Succeed(int chaptersFound, string resultMessage)
     {
         Status = JobRunStatus.Succeeded;
         ChaptersFound = chaptersFound;
+        ResultMessage = Truncate(resultMessage);
         FinishedAt = DateTime.UtcNow;
     }
 
@@ -50,6 +52,6 @@ public class JobRun
 
     private static string Truncate(string message)
     {
-        return message.Length <= ErrorMessageMaxLength ? message : message[..ErrorMessageMaxLength];
+        return message.Length <= MessageMaxLength ? message : message[..MessageMaxLength];
     }
 }

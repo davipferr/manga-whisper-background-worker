@@ -17,9 +17,16 @@ public class WorkerHeartbeatRepository : IWorkerHeartbeatRepository
     public async Task BeatAsync(DateTime startedAtUtc, CancellationToken cancellationToken = default)
     {
         await _context.Database.ExecuteSqlInterpolatedAsync($"""
-            INSERT INTO "WorkerHeartbeats" ("Id", "LastSeenAt", "StartedAt")
-            VALUES ({WorkerHeartbeat.SingletonId}, {DateTime.UtcNow}, {startedAtUtc})
-            ON CONFLICT ("Id") DO UPDATE SET "LastSeenAt" = EXCLUDED."LastSeenAt", "StartedAt" = EXCLUDED."StartedAt"
+            INSERT INTO "WorkerHeartbeats" ("Id", "LastSeenAt", "StartedAt", "StoppedAt")
+            VALUES ({WorkerHeartbeat.SingletonId}, {DateTime.UtcNow}, {startedAtUtc}, NULL)
+            ON CONFLICT ("Id") DO UPDATE SET "LastSeenAt" = EXCLUDED."LastSeenAt", "StartedAt" = EXCLUDED."StartedAt", "StoppedAt" = NULL
+            """, cancellationToken);
+    }
+
+    public async Task MarkStoppedAsync(CancellationToken cancellationToken = default)
+    {
+        await _context.Database.ExecuteSqlInterpolatedAsync($"""
+            UPDATE "WorkerHeartbeats" SET "StoppedAt" = {DateTime.UtcNow} WHERE "Id" = {WorkerHeartbeat.SingletonId}
             """, cancellationToken);
     }
 }

@@ -8,4 +8,5 @@ public class WorkerHeartbeat
     public int Id { get; set; }
     public DateTime LastSeenAt { get; set; }
     public DateTime StartedAt { get; set; }
+    public DateTime? StoppedAt { get; set; }
 }
