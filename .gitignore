@@ -75,3 +75,8 @@ selenium-manager/
 
 # Build output
 publish/
+
+# Pipeline de skills: reproduzíveis com `npm --prefix pipeline install` e `run setup`
+.claude/skills/
+.agents/skills/
+pipeline/node_modules/

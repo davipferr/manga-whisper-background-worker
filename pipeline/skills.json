@@ -1,0 +1,42 @@
+{
+  "$comment": "Skills externas (do skills.sh / GitHub) que o pipeline usa. `npm --prefix pipeline run setup` instala tudo isto + as skills locais de pipeline/skills/ para cada agente em `agents`, na raiz do repositório.",
+  "agents": [
+    "claude-code",
+    "codex"
+  ],
+  "external": [
+    {
+      "source": "mattpocock/skills",
+      "skills": [
+        "grilling",
+        "tdd",
+        "codebase-design"
+      ],
+      "why": "grilling: interrogatório da ideia. tdd: implementação em fatias vermelho→verde. codebase-design: vocabulário que o tdd consulta."
+    },
+    {
+      "source": "vercel-labs/skills",
+      "skills": [
+        "find-skills"
+      ],
+      "why": "find-skills: a skill onboard a usa para achar no skills.sh as skills que servem para a stack de cada projeto."
+    },
+    {
+      "source": "dotnet/skills",
+      "skills": [
+        "analyzing-dotnet-performance",
+        "optimizing-ef-core-queries",
+        "run-tests"
+      ],
+      "why": "analyzing-dotnet-performance: anti-padrões de performance. optimizing-ef-core-queries: queries EF Core dos repositórios e jobs. run-tests: o comando dotnet test certo (oficiais)."
+    },
+    {
+      "source": "github/awesome-copilot",
+      "skills": [
+        "csharp-async",
+        "csharp-xunit"
+      ],
+      "why": "csharp-async: async/await nos background services. csharp-xunit: testes xUnit (o projeto ainda não tem testes)."
+    }
+  ]
+}

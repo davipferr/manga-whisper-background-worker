@@ -69,22 +69,27 @@ Without `CHROME_BINARY` / `CHROMEDRIVER_PATH`, Selenium Manager finds your local
 
 ## Agent skills
 
-[Agent Skills](https://www.skills.sh/) for Claude Code (`.claude/skills/`) and Codex / GitHub Copilot (`.agents/skills/`), installed with the `skills` CLI and listed in `skills-lock.json`:
+The repo uses the [skills pipeline](pipeline/README.md): an idea goes through steps (idea → decisions → PRD → architecture → TDD → verification → review → delivery), each one an [Agent Skill](https://www.skills.sh/). To build a feature, open the agent and say "run the pipeline". The map of every feature, its code and its test is [`docs/FEATURE-MAP.md`](docs/FEATURE-MAP.md).
+
+The skills are listed in `pipeline/skills.json` (external, from skills.sh) and `pipeline/skills/` (the pipeline's own). The installed folders (`.claude/skills/`, `.agents/skills/`) are gitignored. After a clone, install them with (Node 22.18+):
+
+```bash
+npm --prefix pipeline install
+npm --prefix pipeline run setup
+```
+
+Skills for this project, besides the pipeline's:
 
 | Skill | Source | Use it for |
 | --- | --- | --- |
 | `optimizing-ef-core-queries` | `dotnet/skills` | Reviewing EF Core queries in the repositories and background jobs (official) |
 | `analyzing-dotnet-performance` | `dotnet/skills` | Finding .NET performance anti-patterns (official) |
+| `run-tests` | `dotnet/skills` | The right `dotnet test` command and filters (official) |
 | `csharp-async` | `github/awesome-copilot` | Async/await best practices for the background services |
+| `csharp-xunit` | `github/awesome-copilot` | Writing xUnit tests (the repo has none yet) |
 | `find-skills` | `vercel-labs/skills` | Finding more skills on skills.sh |
 
-To add another one (installs copies, so the skills work right after a clone):
-
-```bash
-npx skills add <owner/repo> --skill <name> --agent claude-code codex --copy --yes
-```
-
-Update them with `npx skills update --project --yes`.
+To add another one, put it in `pipeline/skills.json` and run `npm --prefix pipeline run setup`.
 
 ## License
 

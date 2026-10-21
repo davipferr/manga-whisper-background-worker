@@ -1,0 +1,114 @@
+{
+  "version": 1,
+  "skills": {
+    "analyzing-dotnet-performance": {
+      "source": "dotnet/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/dotnet-diag/skills/analyzing-dotnet-performance/SKILL.md",
+      "computedHash": "88e4ef0fbace90c8606466966634e597fad09951878fbf9332df7b98bd9924ee"
+    },
+    "capture-idea": {
+      "source": "./pipeline",
+      "sourceType": "local",
+      "computedHash": "f24d4a6b3343a1bfbe13fb3ac3719d41eba945e101cbda3cf9e0bd4bdd78c790"
+    },
+    "codebase-design": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/codebase-design/SKILL.md",
+      "computedHash": "fb1d8ab98ad151551eeade003e3ae55a46578a380fd9fc3ed4dbf9c2fbce0a9f"
+    },
+    "csharp-async": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/csharp-async/SKILL.md",
+      "computedHash": "e889958419757528e43fb674607d13fffe331a6673cfcef2b0ab8ff9fb569bb8"
+    },
+    "csharp-xunit": {
+      "source": "github/awesome-copilot",
+      "sourceType": "github",
+      "skillPath": "skills/csharp-xunit/SKILL.md",
+      "computedHash": "3c224e79f92ec027de3d5f44d0ca3077f076cb1e1bfff6b0db5b09c34c3aecd2"
+    },
+    "eval-skill": {
+      "source": "./pipeline",
+      "sourceType": "local",
+      "computedHash": "4133a9b2bbc734703d6d04786da05aaca42152b8ce78f287666e3e700e0b29b6"
+    },
+    "find-skills": {
+      "source": "vercel-labs/skills",
+      "sourceType": "github",
+      "skillPath": "skills/find-skills/SKILL.md",
+      "computedHash": "b146008599c31057cef1c145774cea5d5afb30e8f43fa802e47a4b461419aaaf"
+    },
+    "grilling": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/productivity/grilling/SKILL.md",
+      "computedHash": "c3b3e67f18495984385413bc6be7e2acbf2139c6cf52ef42abdda7242a791822"
+    },
+    "harden": {
+      "source": "./pipeline",
+      "sourceType": "local",
+      "computedHash": "a2f143608a4512244048ed4242aaebd266d67931cd6b728db003ef995da518d6"
+    },
+    "investigate": {
+      "source": "./pipeline",
+      "sourceType": "local",
+      "computedHash": "92c5ed9daae049b7dd33fbb909d047928771baad3885de10260b9efd0681ecec"
+    },
+    "onboard": {
+      "source": "./pipeline",
+      "sourceType": "local",
+      "computedHash": "3f18f14cfe09e713fd7c584dc3dc0d388516c55d5728b7ecbdc1c664b621233c"
+    },
+    "optimizing-ef-core-queries": {
+      "source": "dotnet/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/dotnet-data/skills/optimizing-ef-core-queries/SKILL.md",
+      "computedHash": "dd194024f92478a5c74c2690fc7bee08ba8a553acd7056e86050c677c2c767aa"
+    },
+    "plan-architecture": {
+      "source": "./pipeline",
+      "sourceType": "local",
+      "computedHash": "18a9b1c548bae158b704ada9f68abd0fa1e1b707d0450056b6aacd97b9b221c0"
+    },
+    "review-against-prd": {
+      "source": "./pipeline",
+      "sourceType": "local",
+      "computedHash": "89dacc08abba305be73bc41d10e97e1377636a16bbf19b60e49d2c4eafc18703"
+    },
+    "run-pipeline": {
+      "source": "./pipeline",
+      "sourceType": "local",
+      "computedHash": "23c588a83bb83ada19d13a044f258018fbe52dc92e31535e916041e246c50f85"
+    },
+    "run-tests": {
+      "source": "dotnet/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/dotnet-test/skills/run-tests/SKILL.md",
+      "computedHash": "be6532c323794d90ec9de19b43ddd18d81bed0cedec22571862e8f3de0dc9aaa"
+    },
+    "ship-report": {
+      "source": "./pipeline",
+      "sourceType": "local",
+      "computedHash": "88ce6ba3605c422656c04ad77435ed55c0e38800462a9f8e72539df761af80bf"
+    },
+    "tdd": {
+      "source": "mattpocock/skills",
+      "sourceType": "github",
+      "skillPath": "skills/engineering/tdd/SKILL.md",
+      "computedHash": "535d1a6f3bd5bded8971e7e4ea76538907cbff6b6d32c39cf97b669869dcd383"
+    },
+    "verify": {
+      "source": "./pipeline",
+      "sourceType": "local",
+      "computedHash": "59d8e1791921b16b69f36c083950df940c9db345a2266ce1bc983916eafc4329"
+    },
+    "write-prd": {
+      "source": "./pipeline",
+      "sourceType": "local",
+      "computedHash": "9d924054dcd7917abc8e3768b1aea141a55f1b87e48fbbc6821f07e238fdf0ac"
+    }
+  }
+}
